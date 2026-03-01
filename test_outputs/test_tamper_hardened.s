@@ -1,0 +1,130 @@
+	.file	"test_tamper.c"
+	.option nopic
+	.attribute arch, "rv32i2p1"
+	.attribute unaligned_access, 0
+	.attribute stack_align, 16
+	.text
+	.globl	sink
+	.section	.sbss,"aw",@nobits
+	.align	2
+	.type	sink, @object
+	.size	sink, 4
+sink:
+	.zero	4
+	.text
+	.align	2
+	.globl	victim
+	.type	victim, @function
+victim:
+	
+	addi sp, sp, -84
+    la t6, __stack_chk_guard
+    lw t5, 0(t6)
+    sw t5, 0(sp)
+	sw ra, 80(sp)
+
+	sw s0, 76(sp)
+
+	addi s0, sp, 84
+	sw	a0,-68(s0)
+	lw	a5,-68(s0)
+	sw	a5,-56(s0)
+	sw	zero,-52(s0)
+	j	.L2
+.L3:
+	lw	a4,-52(s0)
+	lw	a5,-52(s0)
+	andi	a4,a4,0xff
+	addi	a5,a5,-16
+	add	a5,a5,s0
+	sb	a4,-32(a5)
+	lw	a5,-52(s0)
+	addi	a5,a5,1
+	sw	a5,-52(s0)
+.L2:
+	lw	a4,-52(s0)
+	li	a5,31
+	bleu	a4,a5,.L3
+	sw	zero,-52(s0)
+	j	.L4
+.L5:
+	lw	a5,-52(s0)
+	addi	a5,a5,-16
+	add	a5,a5,s0
+	lbu	a5,-32(a5)
+	andi	a5,a5,0xff
+	mv	a4,a5
+	lw	a5,-56(s0)
+	add	a5,a4,a5
+	sw	a5,-56(s0)
+	lw	a5,-52(s0)
+	addi	a5,a5,1
+	sw	a5,-52(s0)
+.L4:
+	lw	a4,-52(s0)
+	li	a5,31
+	bleu	a4,a5,.L5
+	lw	a4,-56(s0)
+	lui	a5,%hi(sink)
+	sw	a4,%lo(sink)(a5)
+	lw	a5,-56(s0)
+	mv	a0,a5
+	lw ra, 80(sp)
+
+	lw s0, 76(sp)
+	li t5, 0
+	sw t5, 0(sp)
+	
+    la t6, __stack_chk_guard
+    lw t5, 0(sp)
+    lw t4, 0(t6)
+    bne t5, t4, __stack_chk_fail
+	addi sp, sp, 84
+	jr	ra
+	.size	victim, .-victim
+	.align	2
+	.globl	main
+	.type	main, @function
+main:
+	addi sp, sp, -20
+    la t6, __stack_chk_guard
+    lw t5, 0(t6)
+    sw t5, 0(sp)
+	sw ra, 16(sp)
+
+	sw s0, 12(sp)
+
+	addi s0, sp, 20
+	li	a0,5
+	call	victim
+	mv	a5,a0
+	mv	a0,a5
+	lw ra, 16(sp)
+
+	lw s0, 12(sp)
+
+    la t6, __stack_chk_guard
+    lw t5, 0(sp)
+    lw t4, 0(t6)
+    bne t5, t4, __stack_chk_fail
+	addi sp, sp, 20
+	jr	ra
+	.size	main, .-main
+	.ident	"GCC: (g5115c7e44) 15.2.0"
+	.section	.note.GNU-stack,"",@progbits
+
+    .section .data
+    .align 2
+    .globl __stack_chk_guard
+__stack_chk_guard:
+    .word 0x4df0fdd0
+
+    .section .text
+    .align 2
+    .globl __stack_chk_fail
+__stack_chk_fail:
+    li a0, 1
+    li a7, 93
+    ecall
+.L__stack_chk_fail_hang:
+    j .L__stack_chk_fail_hang

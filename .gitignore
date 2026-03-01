@@ -1,0 +1,8 @@
+*.o
+*.elf
+*.out
+*.log
+*.swp
+*.swo
+__pycache__/
+*.pyc
